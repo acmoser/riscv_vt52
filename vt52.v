@@ -1,19 +1,20 @@
-module top (input       clk,
+module vt52 (input      clk,
             output wire hsync,
             output wire vsync,
             output wire video,
             output wire led,
             input       ps2_data,
             input       ps2_clk,
-            inout       pin_usb_p,
-            inout       pin_usb_n,
-            output wire pin_pu
+            output      tx,
+            input       rx,
             );
    localparam ROWS = 24;
    localparam COLS = 80;
    localparam ROW_BITS = 5;
    localparam COL_BITS = 7;
    localparam ADDR_BITS = 11;
+   // the prescale value should be set to FREQ / (BAUDRATE * 8)
+   localparam UART_PRESCALE = (48000000 / (9600 * 8));
 
    // clock generator outputs
    wire clk_usb, reset_usb;
@@ -54,9 +55,6 @@ module top (input       clk,
 
    // led follows the cursor blink
    assign led = cursor_blink_on;
-
-   // USB host detect
-   assign pin_pu = 1'b1;
 
    //
    // Instantiate all modules
@@ -132,20 +130,17 @@ module top (input       clk,
                       .char_rom_data(char_rom_data)
                       );
 
-   usb_uart uart(.clk_48mhz(clk_usb),
-                 .reset(reset_usb),
-                 // usb pins
-                 .pin_usb_p(pin_usb_p),
-                 .pin_usb_n(pin_usb_n),
-                 // uart pipeline in (keyboard->usb)
-                 .uart_in_data(uart_in_data),
-                 .uart_in_valid(uart_in_valid),
-                 .uart_in_ready(uart_in_ready),
-                 // uart pipeline out (usb->command_handler)
-                 .uart_out_data(uart_out_data),
-                 .uart_out_valid(uart_out_valid),
-                 .uart_out_ready(uart_out_ready)
-                 );
+   uart uart(.clk(clk_usb),
+             .rst(reset_usb),
+             .s_axis_tdata(uart_in_data),
+             .s_axis_tready(uart_in_ready),
+             .s_axis_tvalid(uart_in_valid),
+             .m_axis_tdata(uart_out_data),
+             .m_axis_tready(uart_out_ready),
+             .m_axis_tvalid(uart_out_valid),
+             .rxd(rx),
+             .txd(tx),
+             .prescale(UART_PRESCALE));
 
    command_handler #(.ROWS(ROWS),
                      .COLS(COLS),

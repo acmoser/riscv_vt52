@@ -25,13 +25,15 @@ module hardware (
     output pin_usbp,
     output pin_usbn,
 
-    // hardware UART
-    output pin_1,
-    input pin_2,
-
     // onboard LED
     output user_led,
 
+    // terminal inputs/outputs
+    input pin_17, // ps2_data
+    input pin_18, // ps2_clk
+    output pin_9, // hsync
+    output pin_10, // vsync
+    output pin_11, // video
     // onboard SPI flash interface
     output flash_csb,
     output flash_clk,
@@ -45,7 +47,15 @@ module hardware (
     assign pin_usbn = 1'b0;
 
     wire clk = clk_16mhz;
-  
+
+    wire soc_rx, soc_tx;
+
+    // assign vga outputs & ps/2 inputs to pins,
+    // ignore the led output and cross tx/rx pair from SOC
+    vt52 vt52(.clk(clk), .hsync(pin_9), .vsync(pin_10), .video(pin_11),
+             .led(), .ps2_data(pin_17), .ps2_clk(pin_18),
+             .tx(soc_rx), .rx(soc_tx));
+
 
     ///////////////////////////////////
     // Power-on Reset
@@ -57,7 +67,7 @@ module hardware (
         reset_cnt <= reset_cnt + !resetn;
     end
 
-  
+
     ///////////////////////////////////
     // SPI Flash Interface
     ///////////////////////////////////
@@ -76,8 +86,8 @@ module hardware (
         .D_IN_0({flash_io3_di, flash_io2_di, flash_io1_di, flash_io0_di})
     );
 
-    
-  
+
+
     ///////////////////////////////////
     // Peripheral Bus
     ///////////////////////////////////
@@ -109,7 +119,7 @@ module hardware (
                 if (iomem_wstrb[3]) gpio[31:24] <= iomem_wdata[31:24];
             end
 
-            
+
             ///////////////////////////
             // Template Peripheral
             ///////////////////////////
@@ -123,13 +133,13 @@ module hardware (
     picosoc #(
         .PROGADDR_RESET(32'h0005_0000), // beginning of user space in SPI flash
         .PROGADDR_IRQ(32'h0005_0010),
-        .MEM_WORDS(2048)                // use 2KBytes of block RAM by default
+        .MEM_WORDS(1024)                // use 1KBytes of block RAM (leave some mem for vt52)
     ) soc (
         .clk          (clk         ),
         .resetn       (resetn      ),
 
-        .ser_tx       (pin_1       ),
-        .ser_rx       (pin_2       ),
+        .ser_tx       (soc_tx       ),
+        .ser_rx       (soc_rx       ),
 
         .flash_csb    (flash_csb   ),
         .flash_clk    (flash_clk   ),

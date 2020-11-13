@@ -1,7 +1,7 @@
 MEMORY
 {
     FLASH (rx)      : ORIGIN = 0x00050000, LENGTH = 0x100000 /* entire flash, 1 MiB */
-    RAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 0x002000 /* 8 KB */
+    RAM (xrw)       : ORIGIN = 0x00000000, LENGTH = 0x001000 /* 4 KB */
 }
 
 SECTIONS {
@@ -15,8 +15,8 @@ SECTIONS {
         *(.rodata*)        /* .rodata* sections (constants, strings, etc.) */
         *(.srodata)         /* .rodata sections (constants, strings, etc.) */
         *(.srodata*)        /* .rodata* sections (constants, strings, etc.) */
-        *(.eh_frame)      
-        *(.eh_frame*)   
+        *(.eh_frame)
+        *(.eh_frame*)
         . = ALIGN(4);
         _etext = .;        /* define a global symbol at end of code */
         _sidata = _etext;  /* This is used by the startup in order to initialize the .data secion */
