@@ -43,13 +43,28 @@ void main() {
 
     // switch to dual IO mode
     reg_spictrl = (reg_spictrl & ~0x007F0000) | 0x00400000;
- 
+
+    reg_uart_clkdiv = 1666;
+    print("Booting..\n");
     // blink the user LED
     uint32_t led_timer = 0;
-       
+    bool sent = false;
+
+    char *msgs[4] = {"Hello PicoSOC", "Hellp VT52", "Bye PicoSOC", "Bye VT52"};
+
     while (1) {
         reg_leds = led_timer >> 16;
         led_timer = led_timer + 1;
-	print("YES");
-    } 
+        if (reg_leds & 1) {
+          if (!sent) {
+            // go back home & clear line
+            print("\033H\033K");
+            print(msgs[(reg_leds >> 1) & 3]);
+            // send new message
+            sent = true;
+          }
+        } else {
+          sent = false;
+        }
+    }
 }
